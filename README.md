@@ -8,8 +8,6 @@ Please note: Crate is a trademark of Crate Technology Gmbh, registered in the E.
 
 ## What's all this about?
 
-Calm down, you're safe here. I'll explain everything.
-
 #### Node-RED
 
 From Node-RED's own [web page](http://nodered.org):
