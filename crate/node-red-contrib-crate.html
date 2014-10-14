@@ -1,0 +1,108 @@
+<!-- Config node -->
+<script type="text/javascript">
+    RED.nodes.registerType('crate', {
+        category: 'config',
+        color: "#DAC4B4",
+        defaults: {
+            url: { value: "", required: true },
+            name: { value: "" }
+        },
+        label: function() {
+            return this.name || "crate-config";
+        }
+    });
+</script>
+
+<script type="text/x-red" data-template-name="crate">
+    <div class="form-row">
+        <label for="node-config-input-url"><i class="icon-lock"></i> Crate URL</label>
+        <input type="text" id="node-config-input-url" placeholder="http://localhost:4200">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-name"><i class="icon-tag"></i> Name</label>
+        <input type="text" id="node-config-input-name" placeholder="Name">
+    </div>
+</script>
+
+<!-- Output node (put stuff in the database) -->
+<script type="text/javascript">
+    RED.nodes.registerType('crate out',{
+        category: 'storage-output',
+        color: '#DAC4B4',
+        defaults: {
+            name: { value: "" },
+            database: { value: "", type: "crate" },
+            table: { value: "" }
+        },
+        inputs: 1,
+        outputs: 0,
+        align: "right",
+        icon: "crate.png",
+        label: function() {
+            return this.name || "crate";
+        }
+    });
+</script>
+
+<script type="text/x-red" data-template-name="crate out">
+    <div class="form-row">
+        <label for="node-input-database"><i class="icon-database"></i> Database</label>
+        <input type="text" id="node-input-database" placeholder="Crate DB">
+    </div>
+    <div class="form-row">
+        <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-table"><i class="icon"></i> Table</label>
+        <input type="text" id="node-input-table" placeholder="Table Name">
+    </div>
+</script>
+
+<script type="text/x-red" data-help-name="crate out">
+    <p>A simple node that pushes data to crate.io table(s).</p>
+    <p>
+        On the incoming <code>msg</code> object you can set the following properties:<br><br>
+        - <code>msg.table</code> <em>(semi-optional)</em>: Specify which table to insert the data into (this will override the option entered in the node config window if set, allowing you to use one output node to send to multiple tables). Note that table must be set either in the node options or in this property.<br>
+        - <code>msg.data</code> <em>(required)</em>: The JS data object you want to insert in the table, in the form <code>{ columnName1: 'value1', columnName2: 'value2' }</code>.<br>
+        - <code>msg.where</code> <em>(optional)</em>: Makes the insert an update action instead, where your string condition is met, e.g. <code>'columnName3=5'</code>.<br>
+    </p>
+</script>
+
+<!-- Input node (get stuff from the database) -->
+<script type="text/javascript">
+    RED.nodes.registerType('crate in',{
+        category: 'storage-input',
+        color: '#DAC4B4',
+        defaults: {
+            name: { value: "" },
+            database: { value: "", type: "crate" }
+        },
+        inputs: 1,
+        outputs: 1,
+        icon: "crate.png",
+        label: function() {
+            return this.name || "crate";
+        }
+    });
+</script>
+
+<script type="text/x-red" data-template-name="crate in">
+    <div class="form-row">
+        <label for="node-input-database"><i class="icon-database"></i> Database</label>
+        <input type="text" id="node-input-database" placeholder="Crate DB">
+    </div>
+    <div class="form-row">
+        <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+</script>
+
+<script type="text/x-red" data-help-name="crate in">
+    <p>A simple node that gets data from an crate.io database using the sql-like syntax crate provides.</p>
+    <p>
+        On the incoming <code>msg</code> object you can set the following properties:<br><br>
+        - <code>msg.query</code> <em>(required)</em>: A string query, for example:<br><code>"select * from tweets where text like ?"</code><br>
+        - <code>msg.args</code> <em>(required)</em>: Arguments for your query, in an array, e.g. <code>['%crate%']</code>.<br>
+    </p>
+</script>
