@@ -71,7 +71,7 @@ module.exports = function(RED) {
             db.execute(query, msg.args)
             .success(function(res) {
               node.status({fill:"green",shape:"dot",text:"success"});
-              var msg = { payload: res };
+              msg.payload = res;
               node.send(msg);
             });
           }
