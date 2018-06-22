@@ -27,14 +27,20 @@ module.exports = function(RED) {
 
           // a straight insert
           if(msg.data && !msg.where) {
-            db.insert(table, msg.data)
-            .success(node.status({fill:"green",shape:"dot",text:"success"}));
+            db.insert(table, msg.data).then( (res) => {
+              node.status( { fill: "green", shape: "dot", text: "success"} );
+            }).catch( (err) => {
+              node.status( { fill: "red", shape: "dot", text: "failure" } );
+              node.error(err.message);
+            });
           }
           // an update
           else if(msg.data && msg.where) {
-            db.update(table, msg.data, msg.where)
-            .success(function() {
-              node.status({fill:"green",shape:"dot",text:"success"});
+            db.update(table, msg.data, msg.where).then( (res) => {
+              node.status( { fill: "green", shape: "dot", text: "success"} );
+            }).catch( (err) => {
+              node.status( { fill: "red", shape: "dot", text: "failure" } );
+              node.error(message);
             });
           }
           else {
@@ -69,10 +75,13 @@ module.exports = function(RED) {
 
           if(msg.args) {
             db.execute(query, msg.args)
-            .success(function(res) {
+            .then( (res) => {
               node.status({fill:"green",shape:"dot",text:"success"});
               msg.payload = res;
               node.send(msg);
+            }).catch( (err) => {
+              node.status( { fill: "red", shape: "dot", text: "failure" } );
+              node.error(err.message);
             });
           }
           // no args
