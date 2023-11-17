@@ -9,6 +9,16 @@ module.exports = function(RED) {
   }
   RED.nodes.registerType("crate", CrateNode);
 
+function connectToCrate(node) {
+  db.connect(node.crateConfig.url).then(() => {
+    node.status({ fill: "green", shape: "dot", text: "connected" });
+  }).catch((err) => {
+    node.status({ fill: "red", shape: "ring", text: "disconnected" });
+    node.error('Connection to CrateDB failed: ' + err.message);
+    // Implement reconnection strategy here if needed
+  });
+}
+  
   function CrateOutNode(config) {
     RED.nodes.createNode(this, config);
     this.table = config.table;
@@ -18,8 +28,7 @@ module.exports = function(RED) {
     if(this.crateConfig) {
       var node = this;
       //use the token to connect to the correct database
-      db.connect(node.crateConfig.url);
-
+      connectToCrate(node); // CATCH ERROR IF NO CONN AVAIL
       node.on('input', function(msg) {
         // if a table was specified
         if(msg.table || node.table) {
@@ -66,7 +75,7 @@ module.exports = function(RED) {
     if(this.crateConfig) {
       var node = this;
       //use the token to connect to the correct database
-      db.connect(node.crateConfig.url);
+       connectToCrate(node);
 
       node.on('input', function(msg) {
         // if a query was specified
