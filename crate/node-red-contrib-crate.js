@@ -9,17 +9,21 @@ module.exports = function(RED) {
   }
   RED.nodes.registerType("crate", CrateNode);
 
+let isConnected = false;
+  
 function connectToCrate(node) {
-  if (db.isConnected() && node.crateConfig.url === currentConnectionUrl) {
-    // Already connected to the correct database
+  // If already connected and the URL hasn't changed, skip reconnecting
+  if (isConnected && node.crateConfig.url === currentConnectionUrl) {
     node.status({ fill: "green", shape: "dot", text: "already connected" });
     return;
   }
 
   db.connect(node.crateConfig.url).then(() => {
-    currentConnectionUrl = node.crateConfig.url;  // Store the URL of the current connection
+    isConnected = true;
+    currentConnectionUrl = node.crateConfig.url; // Store the URL of the current connection
     node.status({ fill: "green", shape: "dot", text: "connected" });
   }).catch((err) => {
+    isConnected = false;
     node.status({ fill: "red", shape: "ring", text: "disconnected" });
     node.error('Connection to CrateDB failed: ' + err.message);
     // Implement reconnection strategy here if needed
