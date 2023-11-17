@@ -9,6 +9,28 @@ module.exports = function(RED) {
   }
   RED.nodes.registerType("crate", CrateNode);
 
+let isConnected = false;
+let currentConnectionUrl = "";  
+
+
+function connectToCrate(node) {
+    if (isConnected && node.crateConfig.url === currentConnectionUrl) {
+    node.status({ fill: "green", shape: "dot", text: "already connected" });
+    return;
+  }
+  db.connect(node.crateConfig.url, function(err) {
+    if (err) {
+      node.status({ fill: "red", shape: "ring", text: "disconnected" });
+      node.error('Connection to CrateDB failed: ' + err.message);
+      isConnected = false;
+    } else {
+      node.status({ fill: "green", shape: "dot", text: "connected" });
+      isConnected = true;
+      currentConnectionUrl = node.crateConfig.url;
+    }
+  });
+}
+  
   function CrateOutNode(config) {
     RED.nodes.createNode(this, config);
     this.table = config.table;
@@ -18,8 +40,7 @@ module.exports = function(RED) {
     if(this.crateConfig) {
       var node = this;
       //use the token to connect to the correct database
-      db.connect(node.crateConfig.url);
-
+      connectToCrate(node); // CATCH ERROR IF NO CONN AVAIL
       node.on('input', function(msg) {
         // if a table was specified
         if(msg.table || node.table) {
@@ -28,18 +49,20 @@ module.exports = function(RED) {
           // a straight insert
           if(msg.data && !msg.where) {
             db.insert(table, msg.data).then( (res) => {
-              node.status( { fill: "green", shape: "dot", text: "success"} );
+              node.status( { fill: "green", shape: "dot", text: "insert success"} );
             }).catch( (err) => {
-              node.status( { fill: "red", shape: "dot", text: "failure" } );
-              node.error(err.message);
+              node.status( { fill: "red", shape: "dot", text: "insert failure" } );
+              // node.error(err.message);
+              let errorMessage = `Error: ${err.message}. Message payload: ${JSON.stringify(msg.payload)}`;
+              node.error(errorMessage, msg);
             });
           }
           // an update
           else if(msg.data && msg.where) {
             db.update(table, msg.data, msg.where).then( (res) => {
-              node.status( { fill: "green", shape: "dot", text: "success"} );
+              node.status( { fill: "green", shape: "dot", text: "insert success"} );
             }).catch( (err) => {
-              node.status( { fill: "red", shape: "dot", text: "failure" } );
+              node.status( { fill: "red", shape: "dot", text: "insert failure" } );
               node.error(message);
             });
           }
@@ -66,7 +89,7 @@ module.exports = function(RED) {
     if(this.crateConfig) {
       var node = this;
       //use the token to connect to the correct database
-      db.connect(node.crateConfig.url);
+       connectToCrate(node);
 
       node.on('input', function(msg) {
         // if a query was specified
@@ -76,23 +99,23 @@ module.exports = function(RED) {
           if(msg.args) {
             db.execute(query, msg.args)
             .then( (res) => {
-              node.status({fill:"green",shape:"dot",text:"success"});
+              node.status({fill:"green",shape:"dot",text:"Read success"});
               msg.payload = res;
               node.send(msg);
             }).catch( (err) => {
-              node.status( { fill: "red", shape: "dot", text: "failure" } );
+              node.status( { fill: "red", shape: "dot", text: "Read failure" } );
               node.error(err.message);
             });
           }
           // no args
           else {
-            node.status({fill:"red",shape:"dot",text:"failure"});
+            node.status({fill:"red",shape:"dot",text:"Read failure"});
             node.error('No arguments for the query specified in incoming msg object.');
           }
         }
         // no query referenced
         else {
-          node.status({fill:"red",shape:"dot",text:"failure"});
+          node.status({fill:"red",shape:"dot",text:"Read failure"});
           node.error('No query specified in incoming msg object.');
         }
       });
