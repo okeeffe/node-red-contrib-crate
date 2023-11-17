@@ -10,12 +10,13 @@ module.exports = function(RED) {
   RED.nodes.registerType("crate", CrateNode);
 
 function connectToCrate(node) {
-  db.connect(node.crateConfig.url).then(() => {
-    node.status({ fill: "green", shape: "dot", text: "connected" });
-  }).catch((err) => {
-    node.status({ fill: "red", shape: "ring", text: "disconnected" });
-    node.error('Connection to CrateDB failed: ' + err.message);
-    // Implement reconnection strategy here if needed
+  db.connect(node.crateConfig.url, function(err) {
+    if (err) {
+      node.status({ fill: "red", shape: "ring", text: "disconnected" });
+      node.error('Connection to CrateDB failed: ' + err.message);
+    } else {
+      node.status({ fill: "green", shape: "dot", text: "connected" });
+    }
   });
 }
   
