@@ -52,7 +52,9 @@ function connectToCrate(node) {
               node.status( { fill: "green", shape: "dot", text: "insert success"} );
             }).catch( (err) => {
               node.status( { fill: "red", shape: "dot", text: "insert failure" } );
-              node.error(err.message);
+              // node.error(err.message);
+              let errorMessage = `Error: ${err.message}. Message payload: ${JSON.stringify(msg.payload)}`;
+              node.error(errorMessage, msg);
             });
           }
           // an update
