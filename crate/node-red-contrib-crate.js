@@ -10,13 +10,19 @@ module.exports = function(RED) {
   RED.nodes.registerType("crate", CrateNode);
 
 function connectToCrate(node) {
-  db.connect(node.crateConfig.url, function(err) {
-    if (err) {
-      node.status({ fill: "red", shape: "ring", text: "disconnected" });
-      node.error('Connection to CrateDB failed: ' + err.message);
-    } else {
-      node.status({ fill: "green", shape: "dot", text: "connected" });
-    }
+  if (db.isConnected() && node.crateConfig.url === currentConnectionUrl) {
+    // Already connected to the correct database
+    node.status({ fill: "green", shape: "dot", text: "already connected" });
+    return;
+  }
+
+  db.connect(node.crateConfig.url).then(() => {
+    currentConnectionUrl = node.crateConfig.url;  // Store the URL of the current connection
+    node.status({ fill: "green", shape: "dot", text: "connected" });
+  }).catch((err) => {
+    node.status({ fill: "red", shape: "ring", text: "disconnected" });
+    node.error('Connection to CrateDB failed: ' + err.message);
+    // Implement reconnection strategy here if needed
   });
 }
   
@@ -38,18 +44,18 @@ function connectToCrate(node) {
           // a straight insert
           if(msg.data && !msg.where) {
             db.insert(table, msg.data).then( (res) => {
-              node.status( { fill: "green", shape: "dot", text: "success"} );
+              node.status( { fill: "green", shape: "dot", text: "insert success"} );
             }).catch( (err) => {
-              node.status( { fill: "red", shape: "dot", text: "failure" } );
+              node.status( { fill: "red", shape: "dot", text: "insert failure" } );
               node.error(err.message);
             });
           }
           // an update
           else if(msg.data && msg.where) {
             db.update(table, msg.data, msg.where).then( (res) => {
-              node.status( { fill: "green", shape: "dot", text: "success"} );
+              node.status( { fill: "green", shape: "dot", text: "insert success"} );
             }).catch( (err) => {
-              node.status( { fill: "red", shape: "dot", text: "failure" } );
+              node.status( { fill: "red", shape: "dot", text: "insert failure" } );
               node.error(message);
             });
           }
@@ -86,23 +92,23 @@ function connectToCrate(node) {
           if(msg.args) {
             db.execute(query, msg.args)
             .then( (res) => {
-              node.status({fill:"green",shape:"dot",text:"success"});
+              node.status({fill:"green",shape:"dot",text:"Read success"});
               msg.payload = res;
               node.send(msg);
             }).catch( (err) => {
-              node.status( { fill: "red", shape: "dot", text: "failure" } );
+              node.status( { fill: "red", shape: "dot", text: "Read failure" } );
               node.error(err.message);
             });
           }
           // no args
           else {
-            node.status({fill:"red",shape:"dot",text:"failure"});
+            node.status({fill:"red",shape:"dot",text:"Read failure"});
             node.error('No arguments for the query specified in incoming msg object.');
           }
         }
         // no query referenced
         else {
-          node.status({fill:"red",shape:"dot",text:"failure"});
+          node.status({fill:"red",shape:"dot",text:"Read failure"});
           node.error('No query specified in incoming msg object.');
         }
       });
