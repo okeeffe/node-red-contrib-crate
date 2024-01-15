@@ -37,43 +37,62 @@ function connectToCrate(node) {
     this.name = config.name;
     this.crateConfig = RED.nodes.getNode(config.database);
 
-    if(this.crateConfig) {
+    if (this.crateConfig) {
       var node = this;
       //use the token to connect to the correct database
       connectToCrate(node); // CATCH ERROR IF NO CONN AVAIL
-      node.on('input', function(msg) {
+      node.on('input', function (msg) {
         // if a table was specified
-        if(msg.table || node.table) {
+        if (msg.table || node.table) {
           var table = msg.table || node.table;
 
           // a straight insert
-          if(msg.data && !msg.where) {
-            db.insert(table, msg.data).then( (res) => {
-              node.status( { fill: "green", shape: "dot", text: "insert success"} );
-            }).catch( (err) => {
-              node.status( { fill: "red", shape: "dot", text: "insert failure" } );
-              // node.error(err.message);
-              let errorMessage = `Error: ${err.message}. Message payload: ${JSON.stringify(msg.payload)}`;
-              node.error(errorMessage, msg);
-            });
+          if (msg.data && !msg.where) {
+            new Promise((resolve, reject) => {
+              db.insert(table, msg.data, (err, res) => {
+                if (err) {
+                  reject(err);
+                } else {
+                  resolve(res);
+                }
+              });
+            })
+              .then((res) => {
+                node.status({ fill: "green", shape: "dot", text: "insert success" });
+              })
+              .catch((err) => {
+                node.status({ fill: "red", shape: "dot", text: "insert failure" });
+                let errorMessage = `Error: ${err.message}. Message payload: ${JSON.stringify(msg.payload)}`;
+                node.error(errorMessage, msg);
+              });
           }
           // an update
-          else if(msg.data && msg.where) {
-            db.update(table, msg.data, msg.where).then( (res) => {
-              node.status( { fill: "green", shape: "dot", text: "insert success"} );
-            }).catch( (err) => {
-              node.status( { fill: "red", shape: "dot", text: "insert failure" } );
-              node.error(message);
-            });
+          else if (msg.data && msg.where) {
+            new Promise((resolve, reject) => {
+              db.update(table, msg.data, msg.where, (err, res) => {
+                if (err) {
+                  reject(err);
+                } else {
+                  resolve(res);
+                }
+              });
+            })
+              .then((res) => {
+                node.status({ fill: "green", shape: "dot", text: "insert success" });
+              })
+              .catch((err) => {
+                node.status({ fill: "red", shape: "dot", text: "insert failure" });
+                node.error(message);
+              });
           }
           else {
-            node.status({fill:"red",shape:"dot",text:"failure"});
+            node.status({ fill: "red", shape: "dot", text: "failure" });
             node.error('No data property in msg object to insert.');
           }
         }
         // no table referenced
         else {
-          node.status({fill:"red",shape:"dot",text:"failure"});
+          node.status({ fill: "red", shape: "dot", text: "failure" });
           node.error('No table specified in node options or incoming msg object.');
         }
       });
